@@ -11,7 +11,7 @@ An isolated, mouse-only live control-room display. The desktop shows a dated, cu
 
 ## Clone to live (Ubuntu/Debian)
 
-Use a normal non-root user with sudo. This installer installs bubblewrap, Xvfb, x11vnc, GTK 3, Python websockify, SQLite, Node.js/npm and cloudflared. Review the scripts before running them. This is not a security certification.
+Use a normal non-root user with sudo. This installer installs bubblewrap, Xvfb, x11vnc, GTK 3, Python websockify, SQLite, Node.js 20+ with npm, and cloudflared. It fetches NodeSource setup when the system Node is too old. Review the scripts before running them. This is not a security certification.
 
 ```sh
 git clone https://github.com/segz7448/Desk.git
@@ -24,9 +24,9 @@ bash app/app/run.sh
 
 Create a Cloudflare Tunnel in your own account, add a published application hostname matching `DESK_HOSTNAMES`, and point it to `http://127.0.0.1:6081`. Put only the tunnel token in local `.env` (chmod 600), never in Git. `DESK_HOSTNAMES` may be a comma-separated list of exact allowed hostnames. The login defaults to `desk`, or set `DESK_LOGIN` in `.env` **before** setup. On first run the setup script prompts for a fresh password and creates `state/auth.sqlite`; only its salted scrypt hash and server-side sessions go into that ignored database. The password is not printed or committed. `state/`, `.env`, logs and tokens are ignored. If no tunnel token is set, the gateway remains localhost-only. It still requires an HTTPS reverse proxy with a matching host and `X-Forwarded-Proto: https`; a direct local browser visit will return 403.
 
-`run.sh` starts the isolated desktop, VNC bridge, login gateway and optional tunnel. Scripts are invoked with `bash` because GitHub web-editor commits may not retain executable file modes. Keep it under a process supervisor for production; its process group and descendants should be stopped together on shutdown. Ports 6080 and 6081 must stay local. Open your configured HTTPS hostname and sign in with the chosen login/password.
+`run.sh` starts the isolated desktop, VNC bridge, login gateway and optional tunnel. Scripts are invoked with `bash` because GitHub web-editor commits may not retain executable file modes. It stops the child process groups on shutdown; use a process supervisor for production. Ports 6080 and 6081 must stay local. The websockify service on 6080 has no login gate of its own, so never expose that port. Open your configured HTTPS hostname and sign in with the chosen login/password.
 
-The default feed is synthetic `app/app/status.json`. An optional host-side `sh app/app/refresh-feed.sh` checks `DESK_FEED_INPUT` every 60 seconds and atomically writes the display file using `render-feed.py`; configure an approved source JSON in the example schema. The GTK desktop rereads every minute; the observer reports changes and heartbeat checks every 15 seconds. Feed claims need dates. The display is mouse-only, with draggable panels, Refresh and scrolling; the terminal-looking pane is a read-only log viewer.
+The default feed is synthetic `app/app/status.json`. Copy `sample/sample/status.json` if you need a clean sample file separate from the display input. An optional host-side `sh app/app/refresh-feed.sh` checks `DESK_FEED_INPUT` every 60 seconds and atomically writes the display file using `render-feed.py`; configure an approved source JSON in the example schema. The GTK desktop rereads every minute; the observer reports changes and heartbeat checks every 15 seconds. Feed claims need dates. The display is mouse-only, with draggable panels, Refresh and scrolling; the terminal-looking pane is a read-only log viewer.
 
 ## Boundaries
 
