@@ -1,5 +1,5 @@
 'use strict';
-const http=require('http'),auth=require('./auth.cjs'),proxy=require('http-proxy').createProxyServer({target:'http://127.0.0.1:6080',ws:true,xfwd:false});
+const http=require('http'),auth=require('./auth.cjs'),proxy=require('http-proxy').createProxyServer({target:`http://127.0.0.1:${process.env.DESK_WEBSOCKIFY_PORT||6080}`,ws:true,xfwd:false});
 const {URL}=require('url');const PORT=Number(process.env.DESK_PORT||6081);const HOSTS=new Set((process.env.DESK_HOSTNAMES||'desk.example.com').split(',').map(x=>x.trim()));
 function allowedHost(req){const h=req.headers.host;return HOSTS.has(h)}
 function secure(req){return allowedHost(req)&&req.headers['x-forwarded-proto']==='https'}
@@ -13,7 +13,7 @@ const server=http.createServer(async(req,res)=>{try{if(!secure(req)||!originOK(r
 if(!auth.exists())return send(res,503,'Control room account setup pending');
 if(route==='/login'&&req.method==='POST'){if(!auth.allowed(ip(req)))return send(res,429,'Too many tries. Try later.');const p=new URLSearchParams(await raw(req)),valid=auth.check(p.get('account')||'',p.get('password')||'');if(!valid){auth.failed(ip(req));return send(res,401,login,'text/html; charset=utf-8')};auth.clearAttempts(ip(req));const token=auth.newSession();return send(res,303,'',undefined,{'Set-Cookie':`desk_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`,'Location':'/'})}
 if(!auth.session(cookie(req)))return send(res,401,login,'text/html; charset=utf-8');if(route==='/logout'){auth.revoke(cookie(req));return send(res,303,'',undefined,{'Set-Cookie':'desk_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0','Location':'/'})}
-proxy.web(req,res,{target:'http://127.0.0.1:6080'},()=>send(res,502,'Desktop unavailable'));
+proxy.web(req,res,{target:`http://127.0.0.1:${process.env.DESK_WEBSOCKIFY_PORT||6080}`},()=>send(res,502,'Desktop unavailable'));
 }catch(e){console.error('request error',e.message);if(!res.headersSent)send(res,500,'Internal error')}});
-server.on('upgrade',(req,socket,head)=>{if(!secure(req)||!originOK(req)||!auth.session(cookie(req))||new URL(req.url,`https://${req.headers.host}`).pathname!=='/websockify'){socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');return socket.destroy()}proxy.ws(req,socket,head,{target:'ws://127.0.0.1:6080'},()=>socket.destroy())});
+server.on('upgrade',(req,socket,head)=>{if(!secure(req)||!originOK(req)||!auth.session(cookie(req))||new URL(req.url,`https://${req.headers.host}`).pathname!=='/websockify'){socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');return socket.destroy()}proxy.ws(req,socket,head,{target:`ws://127.0.0.1:${process.env.DESK_WEBSOCKIFY_PORT||6080}`},()=>socket.destroy())});
 server.listen(PORT,'127.0.0.1',()=>console.log('control-room gateway localhost:'+PORT));
