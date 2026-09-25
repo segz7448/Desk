@@ -5,8 +5,11 @@ cd "$ROOT"
 set -a; source ./.env; set +a
 if [ ! -f "${DESK_DB_PATH:-state/auth.sqlite}" ]; then echo 'Run ./app/app/setup.sh first' >&2; exit 1; fi
 mkdir -p state app/app/bridge
+for port in "${DESK_PORT:-6081}" "${DESK_WEBSOCKIFY_PORT:-6080}"; do
+  if (echo > "/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "Port $port already in use" >&2; exit 1; fi
+done
 pids=()
-cleanup(){ trap - EXIT INT TERM; for pid in "${pids[@]}"; do kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done; wait || true; }
+cleanup(){ trap - EXIT INT TERM; for pid in "${pids[@]}"; do kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done; wait || true; rm -f app/app/bridge/vnc.sock; }
 trap cleanup EXIT
 trap "exit 130" INT
 trap "exit 143" TERM
