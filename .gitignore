@@ -1,0 +1,9 @@
+node_modules/
+state/
+*.sqlite*
+*.log
+__pycache__/
+.env
+*.pid
+app/app/bridge/
+app/app/public/
