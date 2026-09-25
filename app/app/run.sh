@@ -27,3 +27,5 @@ if [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then
 fi
 printf 'Desk running locally. Public hostname: %s\n' "${DESK_HOSTNAMES:-not configured}"
 wait -n "${pids[@]}"
+# Any critical child exiting ends this launcher; a supervisor restarts the stack.
+exit 1
