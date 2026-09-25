@@ -9,12 +9,15 @@ for port in "${DESK_PORT:-6081}" "${DESK_WEBSOCKIFY_PORT:-6080}"; do
   if (echo > "/dev/tcp/127.0.0.1/$port") 2>/dev/null; then echo "Port $port already in use" >&2; exit 1; fi
 done
 pids=()
-cleanup(){ trap - EXIT INT TERM; for pid in "${pids[@]}"; do kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done; wait || true; rm -f app/app/bridge/vnc.sock; }
+cleanup(){ trap - EXIT INT TERM; for pid in "${pids[@]}"; do kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done; wait || true; rm -f app/app/bridge/vnc.sock app/app/bridge/egress.sock; }
 trap cleanup EXIT
 trap "exit 130" INT
 trap "exit 143" TERM
-rm -f app/app/bridge/vnc.sock
-setsid sh ./app/app/isolated-display.sh & pids+=($!)
+rm -f app/app/bridge/vnc.sock app/app/bridge/egress.sock
+setsid python3 ./app/app/egress-proxy.py app/app/bridge/egress.sock & pids+=($!)
+for i in $(seq 1 30); do [ -S app/app/bridge/egress.sock ] && break; sleep 0.1; done
+[ -S app/app/bridge/egress.sock ] || { echo "Restricted egress proxy did not start" >&2; exit 1; }
+setsid bash ./app/app/isolated-display.sh & pids+=($!)
 for i in $(seq 1 30); do [ -S app/app/bridge/vnc.sock ] && break; sleep 1; done
 [ -S app/app/bridge/vnc.sock ] || { echo 'VNC bridge did not start' >&2; exit 1; }
 setsid sh ./app/app/websockify.sh & pids+=($!)
