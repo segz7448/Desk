@@ -7,3 +7,6 @@ __pycache__/
 *.pid
 app/app/bridge/
 app/app/public/
+state/home/
+state/etc/
+state/feed/
