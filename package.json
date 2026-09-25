@@ -1,0 +1,1 @@
+{"private":true,"scripts":{"start":"node app/app/gateway.cjs","init-login":"node app/app/init-login.cjs"},"dependencies":{"@novnc/novnc":"^1.7.0","better-sqlite3":"^12.2.0","http-proxy":"^1.18.1"}}
