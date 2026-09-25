@@ -5,4 +5,4 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 mkdir -p "$ROOT/public"
 ln -sfn ../../../node_modules/@novnc/novnc "$ROOT/public/novnc"
 ln -sfn ../index.html "$ROOT/public/index.html"
-exec python3 -m websockify --web="$ROOT/public" --unix-target="$ROOT/bridge/vnc.sock" 127.0.0.1:6080
+exec /usr/bin/python3 -m websockify --web="$ROOT/public" --unix-target="$ROOT/bridge/vnc.sock" "127.0.0.1:${DESK_WEBSOCKIFY_PORT:-6080}"
