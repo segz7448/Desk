@@ -1,0 +1,19 @@
+'use strict';
+const http=require('http'),auth=require('./auth.cjs'),proxy=require('http-proxy').createProxyServer({target:'http://127.0.0.1:6080',ws:true,xfwd:false});
+const {URL}=require('url');const PORT=Number(process.env.DESK_PORT||6081);const HOSTS=new Set((process.env.DESK_HOSTNAMES||'desk.example.com').split(',').map(x=>x.trim()));
+function allowedHost(req){const h=req.headers.host;return HOSTS.has(h)}
+function secure(req){return allowedHost(req)&&req.headers['x-forwarded-proto']==='https'}
+function originOK(req){const o=req.headers.origin;return !o||o===`https://${req.headers.host}`||(o==='null'&&req.headers['sec-fetch-site']==='same-origin')}
+function send(res,code,body,type='text/plain; charset=utf-8',headers={}){res.writeHead(code,{'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; form-action 'self'; frame-ancestors 'none'",'X-Frame-Options':'DENY',...headers});res.end(body)}
+function cookie(req){return (req.headers.cookie||'').match(/(?:^|;\s*)desk_session=([a-f0-9]{64})(?:;|$)/)?.[1]}
+function ip(req){return (req.headers['cf-connecting-ip']||req.socket.remoteAddress||'unknown').toString()}
+function raw(req){return new Promise((resolve,reject)=>{let body='';req.on('data',c=>{body+=c;if(body.length>2048){reject(new Error('too long'));req.destroy()}});req.on('end',()=>resolve(body));req.on('error',reject)})}
+const login=`<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Control room sign in</title><style>body{font:16px system-ui;max-width:420px;margin:10vh auto;padding:20px;color:#222}input,button{font:inherit;width:100%;padding:12px;box-sizing:border-box;margin-top:14px}p{line-height:1.5}</style><h1>Desk Control Room</h1><p>Sign in to the isolated desktop. This is a viewing room, not the agent's machine.</p><form method="post" action="/login"><label>Account<input name="account" autocomplete="username" required></label><label>Password<input type="password" name="password" autocomplete="current-password" required></label><button>Sign in</button></form></html>`;
+const server=http.createServer(async(req,res)=>{try{if(!secure(req)||!originOK(req)){return send(res,403,'Forbidden');}const route=new URL(req.url,`https://${req.headers.host}`).pathname;
+if(!auth.exists())return send(res,503,'Control room account setup pending');
+if(route==='/login'&&req.method==='POST'){if(!auth.allowed(ip(req)))return send(res,429,'Too many tries. Try later.');const p=new URLSearchParams(await raw(req)),valid=auth.check(p.get('account')||'',p.get('password')||'');if(!valid){auth.failed(ip(req));return send(res,401,login,'text/html; charset=utf-8')};auth.clearAttempts(ip(req));const token=auth.newSession();return send(res,303,'',undefined,{'Set-Cookie':`desk_session=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600`,'Location':'/'})}
+if(!auth.session(cookie(req)))return send(res,401,login,'text/html; charset=utf-8');if(route==='/logout'){auth.revoke(cookie(req));return send(res,303,'',undefined,{'Set-Cookie':'desk_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0','Location':'/'})}
+proxy.web(req,res,{target:'http://127.0.0.1:6080'},()=>send(res,502,'Desktop unavailable'));
+}catch(e){console.error('request error',e.message);if(!res.headersSent)send(res,500,'Internal error')}});
+server.on('upgrade',(req,socket,head)=>{if(!secure(req)||!originOK(req)||!auth.session(cookie(req))||new URL(req.url,`https://${req.headers.host}`).pathname!=='/websockify'){socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');return socket.destroy()}proxy.ws(req,socket,head,{target:'ws://127.0.0.1:6080'},()=>socket.destroy())});
+server.listen(PORT,'127.0.0.1',()=>console.log('control-room gateway localhost:'+PORT));
