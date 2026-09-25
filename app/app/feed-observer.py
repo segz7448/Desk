@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import json,time,datetime,os
 from pathlib import Path
-source=Path('/home/room/status.json')
+source=Path('/home/feed/status.json')
 last=None
 print('[isolated observer] Starting. Source: curated read-only status feed.',flush=True)
 while True:
