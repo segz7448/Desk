@@ -5,7 +5,7 @@ cd "$ROOT"
 if [ "$(id -u)" -eq 0 ]; then echo 'Run as a normal user with sudo access, not root.' >&2; exit 1; fi
 if ! command -v apt-get >/dev/null; then echo 'Ubuntu/Debian with apt-get is required.' >&2; exit 1; fi
 sudo apt-get update
-sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify xfce4 xfce4-terminal thunar mousepad dbus-x11 fonts-dejavu-core firefox-esr curl ca-certificates sqlite3
+sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify xfce4 xfce4-terminal thunar mousepad dbus-x11 fonts-dejavu-core firefox-esr curl ca-certificates sqlite3 git python3-pip build-essential gedit ristretto xarchiver
 node_major=$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)
 if [ "$node_major" -lt 20 ]; then
   curl --fail --location --silent --show-error https://deb.nodesource.com/setup_22.x -o /tmp/desk-node-setup.sh
