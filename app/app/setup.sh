@@ -5,8 +5,15 @@ cd "$ROOT"
 if [ "$(id -u)" -eq 0 ]; then echo 'Run as a normal user with sudo access, not root.' >&2; exit 1; fi
 if ! command -v apt-get >/dev/null; then echo 'Ubuntu/Debian with apt-get is required.' >&2; exit 1; fi
 sudo apt-get update
-sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify nodejs npm curl ca-certificates sqlite3
-npm install
+sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify curl ca-certificates sqlite3
+node_major=$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)
+if [ "$node_major" -lt 20 ]; then
+  curl --fail --location --silent --show-error https://deb.nodesource.com/setup_22.x -o /tmp/desk-node-setup.sh
+  sudo bash /tmp/desk-node-setup.sh
+  rm -f /tmp/desk-node-setup.sh
+  sudo apt-get install -y nodejs
+fi
+npm ci
 if ! command -v cloudflared >/dev/null; then
   arch=$(dpkg --print-architecture)
   case "$arch" in amd64|arm64) ;; *) echo "Unsupported cloudflared architecture: $arch" >&2; exit 1;; esac
