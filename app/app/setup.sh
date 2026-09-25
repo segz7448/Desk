@@ -5,7 +5,7 @@ cd "$ROOT"
 if [ "$(id -u)" -eq 0 ]; then echo 'Run as a normal user with sudo access, not root.' >&2; exit 1; fi
 if ! command -v apt-get >/dev/null; then echo 'Ubuntu/Debian with apt-get is required.' >&2; exit 1; fi
 sudo apt-get update
-sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify curl ca-certificates sqlite3
+sudo apt-get install -y bubblewrap xvfb x11vnc socat python3 python3-gi gir1.2-gtk-3.0 python3-websockify xfce4 xfce4-terminal thunar mousepad dbus-x11 fonts-dejavu-core firefox-esr curl ca-certificates sqlite3
 node_major=$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)
 if [ "$node_major" -lt 20 ]; then
   curl --fail --location --silent --show-error https://deb.nodesource.com/setup_22.x -o /tmp/desk-node-setup.sh
@@ -21,8 +21,8 @@ if ! command -v cloudflared >/dev/null; then
   sudo dpkg -i /tmp/desk-cloudflared.deb
   rm -f /tmp/desk-cloudflared.deb
 fi
-mkdir -p state app/app/bridge
-chmod 700 state app/app/bridge
+mkdir -p state app/app/bridge state/home/Desktop state/home/Documents state/etc state/feed
+chmod 700 state app/app/bridge state/home state/etc state/feed
 if [ ! -f .env ]; then cp .env.example .env; chmod 600 .env; fi
 set -a; source ./.env; set +a
 if [ ! -f "${DESK_DB_PATH:-state/auth.sqlite}" ]; then
