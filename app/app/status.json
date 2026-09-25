@@ -1,0 +1,8 @@
+{
+  "updated": "Jan 1, 9:00 AM UTC",
+  "companies": [{"name":"Example Studio","ceo":"Sample Owner","work":"Demo task in progress.","last_report":"Jan 1, 8:45 AM UTC"}],
+  "watchers": [{"name":"Demo watch","scope":"Example status source","cadence":"Sample cadence","last_report":"Jan 1, 8:45 AM UTC"}],
+  "revenue": {"settled":"$0","target":"$100","as_of":"Jan 1, 8:45 AM UTC","source":"Example data only; not a ledger"},
+  "acquisition": [{"name":"Sample","value":"1 demo lead"}],
+  "activity": [{"name":"Example Studio","at":"Jan 1, 8:45 AM UTC","work":"Demo event; no live customer data."}]
+}
