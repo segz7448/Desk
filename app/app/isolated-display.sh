@@ -3,10 +3,10 @@ set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "$0")" && pwd)
 PROJECT=$(cd -- "$ROOT/../.." && pwd)
 STATE="$PROJECT/state"
-mkdir -p "$ROOT/bridge" "$STATE/home/Desktop" "$STATE/home/Documents" "$STATE/etc" "$STATE/feed"
-chmod 700 "$ROOT/bridge" "$STATE/home" "$STATE/etc" "$STATE/feed"
+mkdir -p "$ROOT/bridge" "$STATE/home/Desktop" "$STATE/home/Documents" "$STATE/home/workspace" "$STATE/deliverables" "$STATE/etc" "$STATE/feed"
+chmod 700 "$ROOT/bridge" "$STATE/home" "$STATE/etc" "$STATE/feed" "$STATE/home/workspace" "$STATE/deliverables"
 if [ ! -f "$STATE/feed/status.json" ]; then cp "$ROOT/status.json" "$STATE/feed/status.json"; fi
-mkdir -p "$STATE/home/.config/xfce4/xfconf/xfce-perchannel-xml"
+mkdir -p "$STATE/home/.config/xfce4/xfconf/xfce-perchannel-xml" "$STATE/home/.config/autostart"
 if [ ! -f "$STATE/home/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml" ]; then
   sed -e "/<value type=\"int\" value=\"9\"\\/>/d" -e "/<property name=\"plugin-9\"/d" /etc/xdg/xfce4/panel/default.xml > "$STATE/home/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
 fi
@@ -48,6 +48,7 @@ args=(--die-with-parent --unshare-all --hostname desk-remote-pc
   --tmpfs /tmp --tmpfs /home --tmpfs /run --tmpfs /var --dir /dev/shm --dir /etc --dir /opt --dir /opt/google
   --bind "$STATE/home" /home/deskguest --ro-bind "$ROOT" /home/app
   --ro-bind "$STATE/feed" /home/feed
+  --ro-bind "$STATE/deliverables" /home/deliverables
   --bind "$ROOT/bridge" /bridge
   --ro-bind "$STATE/etc/passwd" /etc/passwd --ro-bind "$STATE/etc/group" /etc/group
   --ro-bind "$STATE/etc/hosts" /etc/hosts --ro-bind "$STATE/etc/resolv.conf" /etc/resolv.conf
@@ -56,7 +57,8 @@ args=(--die-with-parent --unshare-all --hostname desk-remote-pc
   --setenv HOME /home/deskguest --setenv USER deskguest --setenv LOGNAME deskguest
   --setenv PATH /usr/bin:/bin --setenv XDG_CONFIG_HOME /home/deskguest/.config
   --setenv http_proxy http://127.0.0.1:3128 --setenv https_proxy http://127.0.0.1:3128
-  --setenv no_proxy localhost,127.0.0.1)
+  --setenv no_proxy localhost,127.0.0.1
+  --setenv GIT_CONFIG_NOSYSTEM 1)
 # Firefox ESR from the system package is mounted read-only.
 if [ -d /usr/lib/firefox-esr ]; then
   args+=(--ro-bind /usr/lib/firefox-esr /usr/lib/firefox-esr)
@@ -102,6 +104,7 @@ exec bwrap "${args[@]}" /usr/bin/bash -c '
   export DISPLAY=:1
   Xvfb :1 -screen 0 1440x900x24 -nolisten tcp >/tmp/xvfb.log 2>&1 &
   sleep 1
+  /usr/bin/bash /home/app/workspace-refresh-loop.sh >/tmp/workspace-refresh.log 2>&1 &
   dbus-run-session -- xfce4-session >/tmp/xfce.log 2>&1 &
   sleep 2
   x11vnc -localhost -rfbport 5998 -forever -shared -nopw -o /tmp/x11vnc.log >/tmp/vnc-start.log 2>&1 &
