@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Desk Remote PC</title>
-<style>html,body{height:100%;margin:0;background:#111;color:#eee;font:14px system-ui}header{height:42px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;background:#222}#status{flex:1}#screen{width:100%;height:calc(100% - 42px);overflow:auto}button{background:#333;color:#fff;border:1px solid #666;border-radius:5px;padding:6px 9px}button:focus{outline:2px solid #73bbfc}</style>
-<header><strong>Desk Remote PC</strong><span id="status">Connecting...</span><button id="reconnect">Reconnect</button><a href="/logout" style="color:#b9d6ff">Sign out</a></header><main id="screen"></main>
+<style>html,body{height:100%;margin:0;background:#111;color:#eee;font:14px system-ui}header{height:42px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;background:#222}#screen:focus-within{outline:2px solid #73bbfc;outline-offset:-2px}#clip{width:180px;background:#111;color:#eee;border:1px solid #666;border-radius:5px;padding:5px}#clip:focus{outline:2px solid #73bbfc}#status{flex:1}#screen{width:100%;height:calc(100% - 42px);overflow:auto}button{background:#333;color:#fff;border:1px solid #666;border-radius:5px;padding:6px 9px}button:focus{outline:2px solid #73bbfc}</style>
+<header><strong>Desk Remote PC</strong><span id="status">Connecting...</span><input id="clip" type="text" aria-label="Text to paste into desktop" placeholder="Text to paste" maxlength="2048"><button id="paste" title="Send text to the remote desktop clipboard">Paste</button><button id="reconnect">Reconnect</button><a href="/logout" style="color:#b9d6ff">Sign out</a></header><main id="screen"></main>
 <script type="module">
 import RFB from './novnc/core/rfb.js';
 const status=document.querySelector('#status'),screen=document.querySelector('#screen');let rfb;
 function connect(){if(rfb)rfb.disconnect();status.textContent='Connecting...';const proto=location.protocol==='https:'?'wss':'ws';rfb=new RFB(screen,`${proto}://${location.host}/websockify`);rfb.scaleViewport=true;rfb.resizeSession=false;rfb.viewOnly=false;rfb.addEventListener('connect',()=>status.textContent='Live remote PC - mouse and keyboard enabled');rfb.addEventListener('disconnect',e=>status.textContent=e.detail.clean?'Disconnected':'Connection lost');rfb.addEventListener('securityfailure',()=>status.textContent='Connection refused');}
 document.querySelector('#reconnect').onclick=connect;
+const clip=document.querySelector('#clip');document.querySelector('#paste').onclick=()=>{if(rfb&&clip.value){rfb.clipboardPasteFrom(clip.value);status.textContent='Text sent to remote clipboard - use Ctrl+V inside an app';clip.value='';}};
+clip.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.querySelector('#paste').click()}});
 connect();
 </script></html>
