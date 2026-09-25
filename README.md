@@ -34,3 +34,9 @@ The public repo contains no browser profiles, passwords, tunnel identifiers, acc
 - Source-dated GTK Control Room, isolated feed observer, optional validated renderer.
 
 For troubleshooting, `app/app/check-isolation.sh` can be run inside the guest terminal: `bash /home/app/check-isolation.sh && cat ~/isolation-check.txt`. It reports identity, visible paths, namespace, processes and route. Do not publish its output from a real deployment without reviewing it.
+
+## Workspace and deliverables
+
+The guest has a persistent `~/workspace` for public source repos. A host curator may seed it from an explicit public-only list in `state/public-repos.txt` with `bash app/app/refresh-workspace.sh`; private repositories are excluded. An hourly refresh loop runs inside the isolated guest and fast-forwards clean local clones, skipping edited repos. The guest does not receive GitHub credentials, and this is not a copy of the host workspace.
+
+`~/deliverables` is a separate read-only curated mount. It starts with a placeholder README, not business files. Review and explicitly select each business artifact before importing it with `python3 app/app/import-deliverable.py /path/to/reviewed-file`; never point it at agent transcripts, memory, credentials, internal files or a whole directory. Access to a Drive account is not itself approval to import its files. The running guest sees imported files without a restart.
