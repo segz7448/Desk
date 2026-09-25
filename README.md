@@ -9,24 +9,24 @@ An isolated, mouse-only live control-room display. The desktop shows a dated, cu
 - websockify/noVNC for browser viewing; Node.js HTTP gateway, `better-sqlite3`, scrypt password hashing, and server-side sessions
 - Cloudflare Tunnel for public routing (optional; bring your own account and tunnel)
 
-## Setup
+## Clone to live (Ubuntu/Debian)
 
-Requires Linux with `bwrap`, `Xvfb`, `x11vnc`, `socat`, Python 3 GTK/GI bindings, Python `websockify`, Node.js and npm. Run in a dedicated non-privileged user account on a host you control. This is an illustrative source release, not a turn-key security certification.
+Use a normal non-root user with sudo. This installer installs bubblewrap, Xvfb, x11vnc, GTK 3, Python websockify, SQLite, Node.js/npm and cloudflared. Review the scripts before running them. This is not a security certification.
 
 ```sh
-npm install
-export DESK_HOSTNAMES='desk.example.com'     # comma-separated exact hostnames
-export DESK_LOGIN='desk'
-export DESK_DB_PATH="$PWD/state/auth.sqlite"
-# Pipe a newly chosen password (at least 12 characters) into the initializer;
-# never commit it, put it in a shell argument, or reuse the sample data as real reports.
-read -rs PASSWORD; printf '%s' "$PASSWORD" | npm run init-login; unset PASSWORD
-./scripts/isolated-display.sh
+git clone https://github.com/segz7448/Desk.git
+cd Desk
+bash app/app/setup.sh
+# choose a NEW 12+ character password at the prompt
+nano .env  # set DESK_HOSTNAMES and CLOUDFLARE_TUNNEL_TOKEN
+bash app/app/run.sh
 ```
 
-In separate terminals, run `./scripts/websockify.sh` and `npm start`. The gateway listens only on `127.0.0.1:6081` and requires `X-Forwarded-Proto: https` and an exact configured Host. Configure a Cloudflare Tunnel published application route for each hostname to `http://127.0.0.1:6081`. Set the corresponding DNS route in your own Cloudflare account. Do not expose ports 6080 or 6081 directly to the public Internet. The tunnel's ID/token and account details are deliberately not included here; supply them through your own secret management.
+Create a Cloudflare Tunnel in your own account, add a published application hostname matching `DESK_HOSTNAMES`, and point it to `http://127.0.0.1:6081`. Put only the tunnel token in local `.env` (chmod 600), never in Git. `DESK_HOSTNAMES` may be a comma-separated list of exact allowed hostnames. The login defaults to `desk`, or set `DESK_LOGIN` in `.env` **before** setup. On first run the setup script prompts for a fresh password and creates `state/auth.sqlite`; only its salted scrypt hash and server-side sessions go into that ignored database. The password is not printed or committed. `state/`, `.env`, logs and tokens are ignored. If no tunnel token is set, the gateway remains localhost-only. It still requires an HTTPS reverse proxy with a matching host and `X-Forwarded-Proto: https`; a direct local browser visit will return 403.
 
-Open `https://desk.example.com/` and sign in with `DESK_LOGIN` and the chosen password. The default feed is synthetic `app/status.json`. To run the optional periodic renderer, set `DESK_FEED_INPUT` to a curated JSON file in the same schema and run `./scripts/refresh-feed.sh` on the host. It validates and atomically replaces the display feed every 60 seconds. Only give it data approved for this audience; the display cannot verify an input’s provenance. The GTK desktop rereads the output every minute; the observer prints changes and heartbeat checks every 15 seconds. Feed figures should include their source dates and must not be presented as live payments unless they come from a verified ledger. Do not bind any private host folders or sensitive logs into the sandbox. The display is mouse-only; panel dragging, feed refresh and the status scroll work without keyboard input.
+`run.sh` starts the isolated desktop, VNC bridge, login gateway and optional tunnel. Scripts are invoked with `bash` because GitHub web-editor commits may not retain executable file modes. Keep it under a process supervisor for production; its process group and descendants should be stopped together on shutdown. Ports 6080 and 6081 must stay local. Open your configured HTTPS hostname and sign in with the chosen login/password.
+
+The default feed is synthetic `app/app/status.json`. An optional host-side `sh app/app/refresh-feed.sh` checks `DESK_FEED_INPUT` every 60 seconds and atomically writes the display file using `render-feed.py`; configure an approved source JSON in the example schema. The GTK desktop rereads every minute; the observer reports changes and heartbeat checks every 15 seconds. Feed claims need dates. The display is mouse-only, with draggable panels, Refresh and scrolling; the terminal-looking pane is a read-only log viewer.
 
 ## Boundaries
 
@@ -36,4 +36,4 @@ Never commit `state/`, `.env`, passwords, real reports, tunnel credentials, or l
 
 ## Data flow and watcher coverage
 
-The external status producer writes a curated JSON report using the sample schema. `render-feed.py` checks its shape and atomically replaces the read-only-mounted display copy. The isolated feed observer reports when the snapshot changes; it never queries other accounts or raw logs. Each watcher entry is display data with a scope, cadence, and last report time, not proof that a background watcher is active. Unknown or stale schedules should be labeled as such in the input. Company, pipeline and activity cards likewise show source-dated summaries; update the input before claiming a new result.
+The external status producer writes a curated JSON report using the example schema. `app/app/render-feed.py` checks its shape and atomically replaces the read-only-mounted display copy. The isolated feed observer reports when the snapshot changes; it never queries other accounts or raw logs. Each watcher entry is display data with a scope, cadence, and last report time, not proof that a background watcher is active. Unknown or stale schedules should be labeled as such in the input. Company, pipeline and activity cards likewise show source-dated summaries; update the input before claiming a new result.
