@@ -59,6 +59,32 @@ args=(--die-with-parent --unshare-all --hostname desk-remote-pc
   --setenv http_proxy http://127.0.0.1:3128 --setenv https_proxy http://127.0.0.1:3128
   --setenv no_proxy localhost,127.0.0.1
   --setenv GIT_CONFIG_NOSYSTEM 1)
+# Dev tools use read-only system binaries; only the guest home is writable.
+if command -v gedit >/dev/null; then
+  cat > "$STATE/home/Desktop/Code.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Code Editor
+Exec=/usr/bin/gedit
+Icon=accessories-text-editor
+Terminal=false
+DESKTOP
+  chmod 755 "$STATE/home/Desktop/Code.desktop"
+fi
+for pair in 'Image Viewer:ristretto:ristretto' 'Archives:xarchiver:package-x-generic'; do
+  IFS=: read -r name cmd icon <<< "$pair"
+  if command -v "$cmd" >/dev/null; then
+    cat > "$STATE/home/Desktop/$name.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=$name
+Exec=$cmd
+Icon=$icon
+Terminal=false
+DESKTOP
+    chmod 755 "$STATE/home/Desktop/$name.desktop"
+  fi
+done
 # Firefox ESR from the system package is mounted read-only.
 if [ -d /usr/lib/firefox-esr ]; then
   args+=(--ro-bind /usr/lib/firefox-esr /usr/lib/firefox-esr)
