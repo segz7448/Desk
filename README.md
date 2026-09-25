@@ -4,7 +4,7 @@ Desk is an Xfce virtual desktop served in a browser. It has working mouse and ke
 
 ## Clone to live (Ubuntu/Debian)
 
-Run as a normal non-root account with sudo. Review the scripts first. The installer installs bubblewrap, Xvfb, x11vnc, Xfce, GTK, Thunar, Mousepad, websockify, SQLite, Firefox ESR, Node.js 20+, npm and cloudflared, then creates a fresh login with a password you enter. Shell scripts are invoked with `bash`/`sh` because GitHub's web editor may leave them mode 0644.
+Run as a normal non-root account with sudo. Review the scripts first. The installer installs bubblewrap, Xvfb, x11vnc, Xfce, GTK, Thunar, Mousepad, Gedit, Ristretto, Xarchiver, git, Python pip, build tools, websockify, SQLite, Firefox ESR, Node.js 20+, npm and cloudflared, then creates a fresh login with a password you enter. Shell scripts are invoked with `bash`/`sh` because GitHub's web editor may leave them mode 0644.
 
 ```sh
 git clone https://github.com/segz7448/Desk.git
@@ -40,3 +40,11 @@ For troubleshooting, `app/app/check-isolation.sh` can be run inside the guest te
 The guest has a persistent `~/workspace` for public source repos. A host curator may seed it from an explicit public-only list in `state/public-repos.txt` with `bash app/app/refresh-workspace.sh`; private repositories are excluded. An hourly refresh loop runs inside the isolated guest and fast-forwards clean local clones, skipping edited repos. The guest does not receive GitHub credentials, and this is not a copy of the host workspace.
 
 `~/deliverables` is a separate read-only curated mount. It starts with a placeholder README, not business files. Review and explicitly select each business artifact before importing it with `python3 app/app/import-deliverable.py /path/to/reviewed-file`; never point it at agent transcripts, memory, credentials, internal files or a whole directory. Access to a Drive account is not itself approval to import its files. The running guest sees imported files without a restart.
+
+## Development desktop
+
+The isolated desktop includes Gedit as a code editor, an image viewer (Ristretto), an archive manager (Xarchiver), and a terminal with Git, Python/pip, Node/npm, and GCC. These are guest-visible system binaries mounted read-only; the writable home and cloned public repos stay inside the guest. VS Code and LibreOffice are deliberately not advertised: in this restricted namespace they did not render reliably in testing. A shortcut alone is not a working app.
+
+## Restart supervision
+
+For a fresh install, run `bash app/app/install-service.sh` after setup and `.env` configuration. It installs a systemd user service to restart the full stack if a critical child exits. Check `systemctl --user status desk-remote-pc.service`. Boot recovery requires the user manager to linger; if `loginctl show-user "$USER" -p Linger` is not `yes`, ask the host administrator to enable it. Store your Cloudflare token only in local `.env` (mode 0600), never in Git. Installing the service does not guarantee persistence on a host that lacks systemd or has not enabled lingering.
