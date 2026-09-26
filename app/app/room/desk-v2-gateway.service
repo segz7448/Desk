@@ -6,6 +6,7 @@ Wants=desk-v2-websockify.service
 [Service]
 Type=simple
 WorkingDirectory=/home/sandbox/desk
+Environment=DESK_HOSTNAMES=desk.novamail.store,room.novamail.store,zenas-desk-backup.tail9fff3e.ts.net
 ExecStart=/usr/bin/node /home/sandbox/desk/gateway.cjs
 Restart=always
 RestartSec=3
