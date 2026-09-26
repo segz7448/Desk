@@ -1,0 +1,13 @@
+[Unit]
+Description=Desk tunnel sustained-outage recovery
+After=network-online.target desk-v2-tunnel.service
+Wants=network-online.target desk-v2-tunnel.service
+
+[Service]
+Type=simple
+ExecStart=/home/sandbox/desk/room/tunnel-watchdog.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
