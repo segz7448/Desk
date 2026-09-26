@@ -1,0 +1,12 @@
+[Unit]
+Description=Desk curated status feed refresh
+
+[Service]
+Type=simple
+ExecStart=/home/sandbox/desk/room/refresh-v2-feed.sh
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
