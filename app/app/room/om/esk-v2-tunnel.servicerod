@@ -1,0 +1,15 @@
+[Unit]
+Description=Desk existing Cloudflare tunnel restart wrapper
+After=network-online.target desk-v2-gateway.service
+Wants=network-online.target desk-v2-gateway.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/sandbox/desk
+ExecStart=/home/sandbox/desk/room/start-tunnel.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
