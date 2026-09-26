@@ -78,7 +78,7 @@ if [ -d /usr/lib/libreoffice ] && [ -d /etc/libreoffice ]; then
 [Desktop Entry]
 Type=Application
 Name=LibreOffice Writer
-Exec=/usr/bin/libreoffice --writer
+Exec=/usr/bin/libreoffice -env:UserInstallation=file:///home/deskguest/.config/libreoffice-live --writer
 Icon=libreoffice-writer
 Terminal=false
 DESKTOP
