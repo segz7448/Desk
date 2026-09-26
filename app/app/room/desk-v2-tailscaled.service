@@ -1,0 +1,14 @@
+[Unit]
+Description=Desk backup Tailscale userspace daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/sandbox/desk
+ExecStart=/home/sandbox/desk/room/start-tailscaled.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
