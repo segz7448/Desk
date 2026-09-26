@@ -28,7 +28,7 @@ The public repo contains no browser profiles, passwords, tunnel identifiers, acc
 ## Architecture
 
 - Xvfb + Xfce window manager and desktop, x11vnc with both keyboard and mouse, Unix VNC socket to websockify and noVNC.
-- Node gateway with exact-host and HTTPS checks, SQLite-backed login, scrypt password hash, one-hour server-side sessions, rate limiting, and authenticated WebSocket upgrades.
+- Node gateway with exact-host and HTTPS checks, SQLite-backed login, scrypt password hash, one-hour server-side sessions, rate limiting, and authenticated WebSocket upgrades. A separate SQLite queue accepts login-gated web messages as unverified input; it is not an authenticated owner instruction channel. A relay with a separate local bearer token must be deployed to post agent replies.
 - Bubblewrap mount/PID/network namespaces; Xfce, shell, GTK and browser binaries are read-only system applications; guest home persists separately.
 - Restricted HTTPS CONNECT relay, no direct guest network; optional Cloudflare Tunnel fronts only the authenticated gateway.
 - Source-dated GTK Control Room, isolated feed observer, optional validated renderer.
@@ -43,7 +43,7 @@ The guest has a persistent `~/workspace` for public source repos. A host curator
 
 ## Development desktop
 
-The isolated desktop includes Gedit as a code editor, an image viewer (Ristretto), an archive manager (Xarchiver), and a terminal with Git, Python/pip, Node/npm, and GCC. These are guest-visible system binaries mounted read-only; the writable home and cloned public repos stay inside the guest. VS Code and LibreOffice are deliberately not advertised: in this restricted namespace they did not render reliably in testing. A shortcut alone is not a working app.
+The isolated desktop includes Gedit as a code editor, an image viewer (Ristretto), an archive manager (Xarchiver), and a terminal with Git, Python/pip, Node/npm, and GCC. These are guest-visible system binaries mounted read-only; the writable home and cloned public repos stay inside the guest. VS Code and LibreOffice Writer appear when their host packages are installed; both were visually tested in an isolated guest with real file-open and document editing. On a fresh host, install these optional packages separately. Their bundles are mounted read-only and their profiles remain in the guest home. VS Code opens public guest sources in Restricted Mode until the user chooses whether to trust them.
 
 ## Restart supervision
 
