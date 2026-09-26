@@ -1,0 +1,16 @@
+[Unit]
+Description=Desk authenticated desktop VNC transport backend
+After=desk-v2-display.service
+Requires=desk-v2-display.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/sandbox/desk
+Environment=PYTHONPATH=/home/sandbox/desk/py
+ExecStart=/usr/bin/python3 -m websockify --web=/home/sandbox/desk/public --unix-target=/home/sandbox/Desk-v2/app/app/bridge/vnc.sock 127.0.0.1:6080
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
