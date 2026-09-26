@@ -42,7 +42,7 @@ DESKTOP
 done
 # System applications and shared libraries are read-only. Only the guest home and VNC
 # Unix socket bridge are writable host binds; both were created for this instance.
-args=(--die-with-parent --unshare-all --hostname desk-remote-pc
+args=(--die-with-parent --unshare-all --uid "$(id -u)" --gid "$(id -g)" --hostname desk-remote-pc
   --ro-bind /usr /usr --ro-bind /etc/xdg /etc/xdg --ro-bind /etc/fonts /etc/fonts
   --ro-bind /etc/ssl/certs /etc/ssl/certs --proc /proc --dev /dev
   --tmpfs /tmp --tmpfs /home --tmpfs /run --tmpfs /var --dir /dev/shm --dir /etc --dir /opt --dir /opt/google
@@ -50,16 +50,40 @@ args=(--die-with-parent --unshare-all --hostname desk-remote-pc
   --ro-bind "$STATE/feed" /home/feed
   --ro-bind "$STATE/deliverables" /home/deliverables
   --bind "$ROOT/bridge" /bridge
-  --ro-bind "$STATE/etc/passwd" /etc/passwd --ro-bind "$STATE/etc/group" /etc/group
+  --ro-bind "$STATE/etc/passwd" /etc/passwd --ro-bind "$STATE/etc/group" /etc/group --ro-bind /etc/nsswitch.conf /etc/nsswitch.conf
   --ro-bind "$STATE/etc/hosts" /etc/hosts --ro-bind "$STATE/etc/resolv.conf" /etc/resolv.conf
   --ro-bind "$STATE/etc/hostname" /etc/hostname --ro-bind "$STATE/etc/machine-id" /etc/machine-id
   --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64
-  --setenv HOME /home/deskguest --setenv USER deskguest --setenv LOGNAME deskguest
+  --setenv XDG_RUNTIME_DIR /tmp/runtime-deskguest --setenv HOME /home/deskguest --setenv USER deskguest --setenv LOGNAME deskguest
   --setenv PATH /usr/bin:/bin --setenv XDG_CONFIG_HOME /home/deskguest/.config
   --setenv http_proxy http://127.0.0.1:3128 --setenv https_proxy http://127.0.0.1:3128
   --setenv no_proxy localhost,127.0.0.1
   --setenv GIT_CONFIG_NOSYSTEM 1)
 # Dev tools use read-only system binaries; only the guest home is writable.
+if [ -d /usr/share/code ]; then
+  args+=(--ro-bind /usr/share/code /usr/share/code)
+  cat > "$STATE/home/Desktop/VS Code.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=VS Code
+Exec=/usr/share/code/bin/code --no-sandbox --disable-gpu --user-data-dir=/home/deskguest/.config/Code /home/deskguest/workspace
+Icon=code
+Terminal=false
+DESKTOP
+  chmod 755 "$STATE/home/Desktop/VS Code.desktop"
+fi
+if [ -d /usr/lib/libreoffice ] && [ -d /etc/libreoffice ]; then
+  args+=(--ro-bind /usr/lib/libreoffice /usr/lib/libreoffice --ro-bind /etc/libreoffice /etc/libreoffice)
+  cat > "$STATE/home/Desktop/LibreOffice Writer.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=LibreOffice Writer
+Exec=/usr/bin/libreoffice --writer
+Icon=libreoffice-writer
+Terminal=false
+DESKTOP
+  chmod 755 "$STATE/home/Desktop/LibreOffice Writer.desktop"
+fi
 if command -v gedit >/dev/null; then
   cat > "$STATE/home/Desktop/Code.desktop" <<'DESKTOP'
 [Desktop Entry]
@@ -124,9 +148,12 @@ Terminal=false
 DESKTOP
   chmod 755 "$STATE/home/Desktop/Browser.desktop"
 fi
-exec bwrap "${args[@]}" /usr/bin/bash -c '
+# Construct a fresh user-owned network namespace with only loopback and a synthetic
+# dummy NIC. This supplies Electron a nonzero MAC without sharing the host network.
+# No external route is assigned; the Unix-socket HTTPS relay remains the sole egress.
+exec unshare -Urn /usr/bin/bash -c 'set -e; ip link set lo up; ip link add desk0 type dummy; ip link set desk0 up; exec "$@"' desk-net bwrap --share-net "${args[@]}" /usr/bin/bash -c '
   set -e
-  mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
+  mkdir -p /tmp/.X11-unix /tmp/runtime-deskguest && chmod 1777 /tmp/.X11-unix && chmod 700 /tmp/runtime-deskguest
   export DISPLAY=:1
   Xvfb :1 -screen 0 1440x900x24 -nolisten tcp >/tmp/xvfb.log 2>&1 &
   sleep 1
