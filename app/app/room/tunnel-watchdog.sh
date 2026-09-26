@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Recover Cloudflare's 1033 for either public hostname while the login gateway is healthy.
+# Recover either public hostname on edge 530 or proxy-origin 502 while the login gateway is healthy.
 set -euo pipefail
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 service=desk-v2-tunnel.service
@@ -16,7 +16,8 @@ public_failure(){
   desk_code=$(probe 'https://desk.novamail.store/')
   room_code=$(probe 'https://room.novamail.store/')
   # Either route being broken is an outage; edge responses can differ between probes.
-  [[ "$desk_code" == 530 || "$room_code" == 530 ]]
+  # A 502 origin_tls_timeout is a broken edge-to-origin path, not a healthy route.
+  [[ "$desk_code" == 530 || "$desk_code" == 502 || "$room_code" == 530 || "$room_code" == 502 ]]
 }
 while true; do
   sleep "${WATCHDOG_PROBE_INTERVAL:-5}"
@@ -32,7 +33,7 @@ while true; do
   if ((failures>=3)); then
     now=$(date +%s)
     if ((now-last_restart>=120)) && systemctl --user is-active --quiet "$service" && local_ok && public_failure; then
-      printf 'Public 530 persisted across three probes: desk=%s room=%s, localhost healthy. Restarting connector at %s.\n' "$desk_code" "$room_code" "$(date -Is)"
+      printf 'Public edge/origin failure persisted across three probes: desk=%s room=%s, localhost healthy. Restarting connector at %s.\n' "$desk_code" "$room_code" "$(date -Is)"
       last_restart=$now; failures=0
       systemctl --user restart "$service" || printf 'Tunnel restart failed; systemd will retry.\n' >&2
     fi
