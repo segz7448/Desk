@@ -1,0 +1,15 @@
+[Unit]
+Description=Desk login gateway, retaining existing account database
+After=network.target desk-v2-websockify.service
+Wants=desk-v2-websockify.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/sandbox/desk
+ExecStart=/usr/bin/node /home/sandbox/desk/gateway.cjs
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
