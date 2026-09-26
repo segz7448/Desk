@@ -1,0 +1,14 @@
+[Unit]
+Description=Desk isolated Xfce remote display and restricted HTTPS relay
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/sandbox/Desk-v2
+ExecStart=/home/sandbox/desk/room/start-v2-display.sh
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
